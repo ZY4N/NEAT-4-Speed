@@ -20,7 +20,6 @@ add_executable(NEAT-4-Speed main.cpp
         include/neat/helpers/connection_lookup.hpp
         include/neat/helpers/species_sorter.hpp
         include/neat/inference.hpp
-        include/neat/network.hpp
         include/neat/network_interface_config.hpp
         include/neat/trainer.hpp
         include/neat/trainer.hpp
