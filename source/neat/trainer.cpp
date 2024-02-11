@@ -352,7 +352,7 @@ void trainer::create_crossovers(
 		disjoint_and_excess_conn_selection_engine.seed(disjoint_excess_conn_selection_seeds[seed_offset + i]);
 		parents_connection_survival_distrib.reset();
 
-		const auto& parent_indices = parents_lookup[i];
+		const auto& parent_indices = parents_lookup[seed_offset + i]; // TODO wtf?!?
 
 		std::array<types::conn_range_t, num_parents> parent_connection_its;
 		std::transform(
@@ -392,6 +392,8 @@ void trainer::create_crossovers(
 
 			assert(ancestor_connections[inherited_conn_index].from != ancestor_connections[inherited_conn_index].to);
 
+			// TODO num connections was calculated to be 1 but this array is of size 0.
+			// Maybe the indices are shifted?
 			auto& offspring_connection = offspring_network_connections
 				[offspring_network_connection_index] = ancestor_connections[inherited_conn_index];
 
@@ -636,7 +638,7 @@ void trainer::divide_offspring_between_species(
 	auto num_offspring = types::network_index_t{};
 	const auto population_scale = static_cast<float>(m_population_size);
 
-	std::cout << "Fitness sum: " << fitness_sum << std::endl;
+	//std::cout << "Fitness sum: " << fitness_sum << std::endl;
 
 	if (fitness_sum == 0.0f) {
 		const auto species_range = types::network_range_t::from_index_count(0, m_population_size);
@@ -647,11 +649,11 @@ void trainer::divide_offspring_between_species(
 
 	} else {
 		for (std::size_t i{}; i != ancestor_species_fitness.size(); ++i) {
-			std::cout << "species_fitness[" << i << "]: " << adjust_fitness(ancestor_species_fitness[i]) << std::endl;
+			//std::cout << "species_fitness[" << i << "]: " << adjust_fitness(ancestor_species_fitness[i]) << std::endl;
 
 			const auto none_negative_fitness = adjust_fitness(ancestor_species_fitness[i]);
 			const auto portion = none_negative_fitness / fitness_sum;
-			std::cout << "portion: " << portion << std::endl;
+			//std::cout << "portion: " << portion << std::endl;
 
 			const auto population_portion = portion * population_scale;
 			const auto min_portion = std::floor(population_portion);
@@ -757,7 +759,6 @@ void trainer::calculate_species_offspring_composition_and_sample_ancestors(
 		    ancestor_indices_scores.size() >= m_evolution_config.mutation_rate_config.min_network_champion_size) {
 			const auto champion_index = std::max_element(species_fitness.begin(), species_fitness.end()) -
 				species_fitness.begin();
-			std::cout << "champion_index: " << champion_index << std::endl;
 			champion = champion_index;
 			++champion_count;
 			species_offspring_count--;
@@ -775,8 +776,6 @@ void trainer::calculate_species_offspring_composition_and_sample_ancestors(
 			m_evolution_config.mutation_rate_config.offspring_mutation_rate *
 			static_cast<float>(species_offspring_count)
 		));
-
-		std::cout << "mutation count: " << mutation_count << std::endl;
 
 		add_conn_mutation_count = calc_population_portion_count(
 			m_evolution_config.mutation_rate_config.new_connection_rate
@@ -860,7 +859,6 @@ void trainer::calculate_species_offspring_composition_and_sample_ancestors(
 
 		//-----------------------[ mutation ancestors ]-----------------------//
 
-		std::cout << "mutated_ancestor_count: " << mutated_ancestor_count << std::endl;
 		std::generate(ancestor_lookup_it, ancestor_lookup_it + mutated_ancestor_count, [&]() {
 			const auto ancestor = in_species_ancestor_index_distrib(m_rng);
 			return ancestor;
@@ -876,7 +874,6 @@ void trainer::calculate_species_offspring_composition_and_sample_ancestors(
 
 		auto parent_it = reinterpret_cast<types::parents_t*>(ancestor_lookup_it.base());
 
-		std::cout << "in_species_crossovers_count: " << in_species_crossovers_count << std::endl;
 		std::generate(parent_it, parent_it + in_species_crossovers_count, [&]() -> types::parents_t {
 			const auto parent_a_rng = in_species_ancestor_index_distrib(m_rng);
 			assert(parent_a_rng < ancestor_indices_scores.size());
@@ -892,8 +889,6 @@ void trainer::calculate_species_offspring_composition_and_sample_ancestors(
 		parent_it += in_species_crossovers_count;
 
 		//-----------------------[ inter-species-crossover parents ]-----------------------//
-
-		std::cout << "inter_species_crossover_count: " << inter_species_crossover_count << std::endl;
 
 		std::generate(parent_it, parent_it + inter_species_crossover_count, [&]() -> types::parents_t {
 			auto in_species_parent = in_species_ancestor_index_distrib(m_rng);
@@ -939,7 +934,7 @@ void trainer::evolve_into(
 	const auto ancestor_species_range = types::species_range_t::from_range(ancestors.species);
 	const auto ancestor_species_thread_segments = ancestor_species_range.balanced_segments(m_thread_count);
 
-	std::cout << "|-------------[ calc_species_fitness ]-------------|" << std::endl;
+	// std::cout << "|-------------[ calc_species_fitness ]-------------|" << std::endl;
 
 	debug_vector<float> ancestor_species_fitness(ancestors.species.size());
 	for (const auto& species_segment : ancestor_species_thread_segments) {
@@ -953,7 +948,7 @@ void trainer::evolve_into(
 	}
 	threads.clear();
 
-	std::cout << "|-------------[ divide_offspring_between_species ]-------------|" << std::endl;
+	// std::cout << "|-------------[ divide_offspring_between_species ]-------------|" << std::endl;
 
 	// Calculate every species portion of next generation proportional to species ancestor_fitness.
 	debug_vector<types::network_index_t> species_offspring_counts(ancestors.species.size());
@@ -962,8 +957,8 @@ void trainer::evolve_into(
 	debug_vector<types::population_composition_t> species_offspring_compositions(ancestors.species.size());
 	debug_vector<debug_vector<types::network_index_t>> species_ancestor_lookups(ancestors.species.size());
 
-	std::cout << "|-------------[ calculate_species_offspring_composition_and_sample_ancestors ]-------------|"
-			  << std::endl;
+	// std::cout << "|-------------[ calculate_species_offspring_composition_and_sample_ancestors ]-------------|" <<
+	// std::endl;
 
 	for (const auto& species_segment : ancestor_species_thread_segments) {
 		threads.emplace_back([&, species_segment]() {
@@ -986,7 +981,7 @@ void trainer::evolve_into(
 
 	offspring.networks.resize(ancestors.networks.size());
 
-	std::cout << "|-------------[ accumulate species compositions ]-------------|" << std::endl;
+	//std::cout << "|-------------[ accumulate species compositions ]-------------|" << std::endl;
 
 	// Add all compositions together
 	types::population_composition_t offspring_composition{};
@@ -1012,7 +1007,7 @@ void trainer::evolve_into(
 
 	const auto ancestors_count = (directly_inherited_ancestor_count + offspring_composition.crossover_count * 2);
 
-	std::cout << "|-------------[ Copy ancestors into one vector ]-------------|" << std::endl;
+	// std::cout << "|-------------[ Copy ancestors into one vector ]-------------|" << std::endl;
 
 	debug_vector<types::network_index_t> ancestor_lookup(ancestors_count);
 
@@ -1094,7 +1089,7 @@ void trainer::evolve_into(
 	types::population_composition_t connection_composition{};
 	auto offspring_connection_count = std::size_t{};
 
-	std::cout << "|-------------[ count add_conn_mutation connections ]-------------|" << std::endl;
+	// std::cout << "|-------------[ count add_conn_mutation connections ]-------------|" << std::endl;
 
 	// Calculate number of add connection mutation networks
 	for (const auto& network_index : add_conn_mutation_range.indices()) {
@@ -1112,7 +1107,7 @@ void trainer::evolve_into(
 	}
 	offspring_connection_count += connection_composition.add_conn_mutation_count;
 
-	std::cout << "|-------------[ count add_node_mutation connections ]-------------|" << std::endl;
+	// std::cout << "|-------------[ count add_node_mutation connections ]-------------|" << std::endl;
 
 	// Calculate number of add node mutation networks
 	for (const auto& network_index : add_node_mutation_range.indices()) {
@@ -1133,7 +1128,7 @@ void trainer::evolve_into(
 
 	offspring_connection_count += connection_composition.add_node_mutation_count;
 
-	std::cout << "|-------------[ count topologically_unchanged connections ]-------------|" << std::endl;
+	// std::cout << "|-------------[ count topologically_unchanged connections ]-------------|" << std::endl;
 
 	// Calculate number of topologically unchanged networks
 	for (const auto& network_index : topologically_unchanged_range.indices()) {
@@ -1152,7 +1147,7 @@ void trainer::evolve_into(
 
 	offspring_connection_count += connection_composition.conn_mutation_count;
 
-	std::cout << "|-------------[ count crossover connections ]-------------|" << std::endl;
+	// std::cout << "|-------------[ count crossover connections ]-------------|" << std::endl;
 
 	// Calculate number of crossover connections
 	debug_vector<std::random_device::result_type> crossover_seeds(offspring_composition.crossover_count);
@@ -1232,7 +1227,7 @@ void trainer::evolve_into(
 		sizeof(types::connection_info_t)
 	);
 
-	std::cout << "|-------------[ copying directly inherited connections ]-------------|" << std::endl;
+	// std::cout << "|-------------[ copying directly inherited connections ]-------------|" << std::endl;
 
 	// Copy old connections over from all directly inherited networks.
 	if (not directly_inherited_range.empty()) {
@@ -1282,7 +1277,7 @@ void trainer::evolve_into(
 	// Crossover copies the connections itself, so it can be started before the mutation copy finishes
 	const auto crossover_thread_count = std::max(1u, m_thread_count - mutation_tread_range.size());
 
-	std::cout << "|-------------[ starting crossocer ]-------------|" << std::endl;
+	// std::cout << "|-------------[ starting crossocer ]-------------|" << std::endl;
 
 	if (not crossover_range.empty()) {
 		for (const auto& crossover_segment : crossover_range.balanced_segments(crossover_thread_count)) {
@@ -1313,13 +1308,13 @@ void trainer::evolve_into(
 	}
 	threads.erase(threads.cbegin(), threads.cbegin() + mutation_treads.size());
 
-	std::cout << "|-------------[ copying directly inherited connections done ]-------------|" << std::endl;
+	// std::cout << "|-------------[ copying directly inherited connections done ]-------------|" << std::endl;
 
 	// Start the mutation threads.
 	const auto add_conn_mutation_thread_count = calc_portion(mutation_treads.size(), 0.6);
 	const auto add_node_mutation_thread_count = calc_portion(mutation_treads.size(), 0.4);
 
-	std::cout << "|-------------[ apply_add_conn_mutations ]-------------|" << std::endl;
+	// std::cout << "|-------------[ apply_add_conn_mutations ]-------------|" << std::endl;
 
 	if (not add_conn_mutation_range.empty()) {
 		for (const auto add_conn_mutation_segment :
@@ -1339,7 +1334,7 @@ void trainer::evolve_into(
 		}
 	}
 
-	std::cout << "|-------------[ apply_add_node_mutations ]-------------|" << std::endl;
+	// std::cout << "|-------------[ apply_add_node_mutations ]-------------|" << std::endl;
 
 	if (not add_node_mutation_range.empty()) {
 		for (const auto add_node_mutation_segment :
@@ -1372,7 +1367,7 @@ void trainer::evolve_into(
 	m_conn_lookup.clear();
 	const auto all_conn_mutation_thread_count = calc_portion(m_thread_count, 0.2);
 
-	std::cout << "|-------------[ mutate_connections ]-------------|" << std::endl;
+	// std::cout << "|-------------[ mutate_connections ]-------------|" << std::endl;
 
 	if (not conn_mutation_range.empty()) {
 		for (const auto& conn_mutation_segment :
@@ -1525,7 +1520,7 @@ void trainer::evolve_into(
 		}
 	}
 
-	std::cout << "|-------------[ sort_into_buckets ]-------------|" << std::endl;
+	//std::cout << "|-------------[ sort_into_buckets ]-------------|" << std::endl;
 
 	const auto offspring_network_range = types::network_range_t::from_range(offspring.networks);
 	for (const auto& species_segment : offspring_network_range.balanced_segments(m_thread_count)) {
@@ -1545,11 +1540,10 @@ void trainer::evolve_into(
 		thread.join();
 	}
 
-	std::cout << "|-------------[ assign_species_and_sorted_networks ]-------------|" << std::endl;
+	//std::cout << "|-------------[ assign_species_and_sorted_networks ]-------------|" << std::endl;
 
 	m_species_sorter.assign_species_and_sorted_networks(offspring.species, offspring.networks);
 
-	std::cout << "Checking final connections" << std::endl;
 	for (const auto& network : add_conn_mutation_range.span<const types::network_t>(offspring.networks)) {
 		for (const auto& [from, to] : network.connections.span<const types::connection_t>(offspring.connections)) {
 			assert(
@@ -1631,7 +1625,6 @@ void trainer::update_inference_network_section(
 	types::network_range_t& node_range,
 	types::conn_range_t& conn_range
 ) {
-	debug_vector<bool> node_visited;
 	debug_vector<types::node_index_t> to_be_visited_nodes;
 	std::vector<std::size_t> node_index_lookup;
 
@@ -1652,93 +1645,101 @@ void trainer::update_inference_network_section(
 		const auto max_node_count = m_network_interface_config.output_count + network.hidden_node_count;
 		to_be_visited_nodes.reserve(max_node_count);
 
-		node_visited.clear();
-		node_visited.resize(max_node_count, false);
-
 		node_index_lookup.clear();
 		node_index_lookup.resize(max_node_count, invalid_node_index);
 
+		auto next_node_eval_index = m_network_interface_config.input_count;
+
 		for (const auto& output_index : output_range.indices()) {
 			to_be_visited_nodes.push_back(output_index);
-
-			while (not to_be_visited_nodes.empty()) {
-
-				const auto dst_node_index = to_be_visited_nodes.back();
-				assert(dst_node_index >= m_network_interface_config.input_count);
-
-				if (node_visited[dst_node_index - m_network_interface_config.input_count]) {
-					to_be_visited_nodes.pop_back();
-					continue;
-				}
-
-				auto all_incoming_visited = true;
-
-				// First visit all child nodes, as their results need to be calculated first.
-				for (const auto& conn_index : network.connections.indices()) {
-					if (not generation.connection_infos[conn_index].enabled) {
-						continue;
-					}
-					const auto& conn = generation.connections[conn_index];
-					if (conn.to != dst_node_index) {
-						continue;
-					}
-
-					if (conn.from >= m_network_interface_config.input_count and
-					    node_visited[conn.from - m_network_interface_config.input_count]) {
-						to_be_visited_nodes.push_back(conn.from);
-						all_incoming_visited = false;
-					}
-				}
-
-				if (not all_incoming_visited) {
-					continue;
-				}
-
-				auto incoming_connection_count = inference::types::conn_index_t{};
-
-				for (const auto& conn_index : network.connections.indices()) {
-					if (not generation.connection_infos[conn_index].enabled) {
-						continue;
-					}
-
-					const auto& conn = generation.connections[conn_index];
-					if (conn.to != dst_node_index) {
-						continue;
-					}
-
-					network_group.connections[conn_range.begin()++] = {
-						.source_node_index = conn.from,
-						.weight = generation.connection_weights[conn_index]
-					};
-
-					++incoming_connection_count;
-				}
-
-				const auto next_node_index = node_range.begin()++;
-				auto& next_node = network_group.nodes[next_node_index];
-				next_node.node_index = dst_node_index;
-				next_node.incoming_connection_count = incoming_connection_count;
-				++inference_network.nodes.end();
-
-				node_index_lookup[dst_node_index - m_network_interface_config.input_count] = next_node_index;
-
-				// Now that the node has been added, it can finally be removed from the stack.
-				to_be_visited_nodes.pop_back();
-			}
 		}
 
-		const auto remap_node = [&](std::size_t node_index) {
-			if (node_index >= m_network_interface_config.input_count) {
-				node_index = node_index_lookup[node_index - m_network_interface_config.input_count];
+		while (not to_be_visited_nodes.empty()) {
+
+			const auto dst_node_index = to_be_visited_nodes.back();
+			assert(dst_node_index >= m_network_interface_config.input_count);
+
+			if (node_index_lookup[dst_node_index - m_network_interface_config.input_count] != invalid_node_index) {
+				to_be_visited_nodes.pop_back();
+				continue;
 			}
-			return static_cast<neat::inference::types::node_index_t>(node_index);
+
+			auto all_incoming_visited = true;
+
+			// First visit all child nodes, as their results need to be calculated first.
+			for (const auto& conn_index : network.connections.indices()) {
+				if (not generation.connection_infos[conn_index].enabled) {
+					continue;
+				}
+				const auto& conn = generation.connections[conn_index];
+				if (conn.to != dst_node_index) {
+					continue;
+				}
+
+				// Input nodes don't need to be visited, as their result is already provided.
+				if (conn.from >= m_network_interface_config.input_count and
+				    node_index_lookup[conn.from - m_network_interface_config.input_count] == invalid_node_index) {
+					to_be_visited_nodes.push_back(conn.from);
+					all_incoming_visited = false;
+				}
+			}
+
+			if (not all_incoming_visited) {
+				continue;
+			}
+
+			auto incoming_connection_count = inference::types::conn_index_t{};
+
+			for (const auto& conn_index : network.connections.indices()) {
+				if (not generation.connection_infos[conn_index].enabled) {
+					continue;
+				}
+
+				const auto& conn = generation.connections[conn_index];
+				if (conn.to != dst_node_index) {
+					continue;
+				}
+
+				assert(
+					conn.from < m_network_interface_config.input_count or
+					node_index_lookup[conn.from - m_network_interface_config.input_count] != invalid_node_index
+				);
+
+				network_group.connections[conn_range.begin()++] = {
+					.source_node_index = conn.from,
+					.weight = generation.connection_weights[conn_index]
+				};
+
+				++incoming_connection_count;
+			}
+
+			const auto next_node_index = node_range.begin()++;
+			auto& next_node = network_group.nodes[next_node_index];
+			next_node.node_index = dst_node_index;
+			next_node.incoming_connection_count = incoming_connection_count;
+			++inference_network.nodes.end();
+
+			node_index_lookup[dst_node_index - m_network_interface_config.input_count] = next_node_eval_index++;
+
+			// Now that the node has been added, it can finally be removed from the stack.
+			to_be_visited_nodes.pop_back();
+		}
+
+		const auto remap_node = [&](auto& node_index) {
+			auto new_value = node_index; // TODO remove
+			if (new_value >= m_network_interface_config.input_count) {
+				new_value = node_index_lookup[new_value - m_network_interface_config.input_count];
+				assert(new_value != invalid_node_index);
+			}
+			node_index = new_value;
 		};
 
+		auto conn_it = network_group.connections.begin() + inference_network.connections_begin;
 		for (auto& node : inference_network.nodes.span<neat::inference::types::node_t>(network_group.nodes)) {
-			node.node_index = remap_node(node.node_index);
-		}
-		for (auto& conn : inference_network.nodes.span<neat::inference::types::connection_t>(network_group.connections)) {
-			conn.source_node_index = remap_node(conn.source_node_index);
+			remap_node(node.node_index);
+			for (inference::types::node_index_t i{}; i != node.incoming_connection_count; ++i) {
+				remap_node(conn_it++->source_node_index);
+			}
 		}
 	}
 }

@@ -17,6 +17,7 @@ int main() {
 	using seconds_t = std::chrono::duration<float>;
 	const auto frame_time = seconds_t{ 1.0 } / static_cast<float>(fps);
 	const auto dt = std::chrono::duration_cast<seconds_t>(frame_time).count(); // 2.0f;
+	const auto stop_score = 100;
 
 	// Network Inputs
 	static constexpr auto dist_gap_y_index{ 0 }, dist_pipe_x_index{ 1 }, dist_to_ceiling_y{ 2 }, dist_to_floor_y{ 2 },
@@ -56,6 +57,7 @@ int main() {
 		std::cout << "Press [ENTER] to stop training." << std::endl;
 		std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
 		stop_training.test_and_set(std::memory_order_acquire);
+		std::cout << "Training will be stopped after the next generation." << std::endl;
 	});
 
 	const auto do_inference = [&]() {
@@ -110,15 +112,24 @@ int main() {
 	while (not stop_training.test(std::memory_order_acquire)) {
 		flappy_trainer.evolve(fitness, inference_networks);
 
+		std::fill(fitness.begin(), fitness.end(), 0.0f);
+
 		for (int i{}; i != game_batch_size; ++i) {
 			game_engine.reset();
 
 			do {
 				do_inference();
-			} while (game_engine.update(dt));
+			} while (not game_engine.update(dt));
 
-			for (auto& bird_fitness : fitness) {
-				bird_fitness *= batch_scale;
+			auto& game_state = game_engine.state();
+
+			for (std::size_t j{}; j != fitness.size(); ++j) {
+				const auto& bird_score = game_state.scores[j];
+				if (bird_score >= stop_score) {
+					stop_training.test_and_set(std::memory_order_acquire);
+					break;
+				}
+				fitness[j] += batch_scale * game_state.scores[j];
 			}
 		}
 
@@ -126,7 +137,7 @@ int main() {
 		std::cout << "Average scores min: " << *min_fitness_it << " max: " << *max_fitness_it << std::endl;
 	}
 
-	keyboard_listener_thread.join();
+	//keyboard_listener_thread.join();
 
 
 	//----------------------[ Window/GLEW Setup ]----------------------//

@@ -4,7 +4,7 @@ project(NEAT-4-Speed)
 set(CMAKE_CXX_STANDARD 23)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Ofast -pedantic -Wall -Werror ")
+#set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Ofast -pedantic -Wall -Werror ")
 
 add_executable(NEAT-4-Speed main.cpp
         include/flappy_birds/game_engine.hpp

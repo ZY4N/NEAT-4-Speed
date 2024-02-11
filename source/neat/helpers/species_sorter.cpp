@@ -80,8 +80,6 @@ void species_sorter::assign_species_and_sorted_networks(
 	for (types::species_index_t i = 0; i != m_species_buckets.size(); ++i) {
 		const auto& species_bucket = m_species_buckets[i];
 
-		std::cout << "species[" << i << "]: " << species_bucket.networks.size() << std::endl;
-
 		std::copy(species_bucket.networks.begin(), species_bucket.networks.end(), networks.begin() + network_index);
 
 		auto& species = all_species[i];

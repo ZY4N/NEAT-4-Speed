@@ -22,7 +22,7 @@ struct config_t {
 	float score_weight_dist_from_start_x{ 1.0 };
 	float score_weight_dist_from_gap_y{ 0.1 };
 
-	std::uint32_t pipes_in_front_of_bird{ 3 };
+	std::uint32_t pipes_in_front_of_bird{ 2 };
 	std::uint32_t pipes_behind_bird{ 1 };
 };
 

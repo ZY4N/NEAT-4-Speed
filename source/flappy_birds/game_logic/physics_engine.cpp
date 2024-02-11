@@ -118,7 +118,7 @@ bool physics_engine_t::update(const config_t& config, state_t& state, std::vecto
 
 			const auto dist_from_gap_y = std::abs(closes_pipe_opening_y - bird_y);
 
-			state.scores[original_index] += distance_from_start_score +
+			state.scores[original_index] = distance_from_start_score +
 				config.score_weight_dist_from_gap_y * (1.0f - dist_from_gap_y / max_dist_from_gap_y);
 
 		} else {
