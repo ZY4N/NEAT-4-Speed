@@ -3,7 +3,7 @@
 #include <cinttypes>
 #include <deque>
 #include <random>
-#include <vector>
+#include "util/debug_vector.hpp" // TODO remove
 
 namespace flappy_birds::game_logic {
 
@@ -14,9 +14,9 @@ struct bird_state_t {
 };
 
 struct state_t {
-	std::vector<bird_state_t> bird_states;
-	std::vector<std::uint32_t> active_bird_indices;
-	std::vector<float> scores;
+	debug_vector<bird_state_t> bird_states;
+	debug_vector<std::uint32_t> active_bird_indices;
+	debug_vector<float> scores;
 	std::deque<float> pipe_gaps_y;
 	float pipe_position_x;
 	std::size_t pipes_surpassed_count;

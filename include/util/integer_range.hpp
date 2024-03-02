@@ -2,6 +2,7 @@
 #include <ranges>
 #include <span>
 #include "util/debug_span.hpp" // TODO remove
+#include "util/debug_vector.hpp" // TODO remove
 #include <cassert>
 
 template<typename Integer>
@@ -44,6 +45,19 @@ struct integer_range {
 
 	template<typename T>
 	[[nodiscard]] inline debug_span<T> span(debug_span<T> range) const;
+
+	template<typename T>
+	[[nodiscard]] inline debug_span<const T> span(const debug_vector<T>& range) const;
+
+	template<typename T>
+	[[nodiscard]] inline debug_span<T> span(debug_vector<T>& range) const;
+
+
+	template<typename T>
+	[[nodiscard]] inline debug_span<const T> cspan(debug_span<T> range) const;
+
+	template<typename T>
+	[[nodiscard]] inline debug_span<const T> cspan(const debug_vector<T>& range) const;
 
 	[[nodiscard]] inline balanced_segments_t<Integer> balanced_segments(std::size_t segment_count) const;
 	[[nodiscard]] inline fixed_segments_t<Integer> fixed_segments(Integer segment_size) const;
@@ -426,6 +440,37 @@ template<typename T>
 	// return range.subspan(m_begin, m_end - m_begin); TODO use again
 	return debug_span<T>(range.begin() + m_begin, range.begin() + m_end);
 }
+
+template<typename Integer>
+template<typename T>
+[[nodiscard]] debug_span<const T> integer_range<Integer>::span(const debug_vector<T>& range) const {
+	assert(m_begin == m_end or m_begin < range.size());
+	assert(m_end <= range.size());
+	return debug_span<const T>(range.begin() + m_begin, range.begin() + m_end);
+}
+
+template<typename Integer>
+template<typename T>
+[[nodiscard]] debug_span<T> integer_range<Integer>::span(debug_vector<T>& range) const {
+	assert(m_begin == m_end or m_begin < range.size());
+	assert(m_end <= range.size());
+	return debug_span<T>(range.begin() + m_begin, range.begin() + m_end);
+}
+
+template<typename Integer>
+template<typename T>
+[[nodiscard]] debug_span<const T> integer_range<Integer>::cspan(debug_span<T> range) const {
+	assert(m_begin == m_end or m_begin < range.size());
+	assert(m_end <= range.size());
+	return debug_span<const T>(range.begin() + m_begin, range.begin() + m_end);
+}
+
+template<typename Integer>
+template<typename T>
+[[nodiscard]] debug_span<const T> integer_range<Integer>::cspan(const debug_vector<T>& range) const {
+	return this->span(range);
+}
+
 
 template<typename Integer>
 integer_range<Integer>::integer_range(const Integer begin, const Integer end) : m_begin{ begin }, m_end{ end } {

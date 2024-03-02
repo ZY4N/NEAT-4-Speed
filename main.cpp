@@ -66,51 +66,54 @@ int main() {
 		auto& game_state = game_engine.state();
 
 		const auto inference_network_range = integer_range<neat::types::network_index_t>::from_range(
-			game_state.active_bird_indices
+			inference_networks.networks
 		);
 
 		const auto next_gap_y = game_state.pipe_gaps_y[game_config.pipes_behind_bird];
 
+		for (std::size_t i{}; i != game_state.bird_states.size(); ++i) {
+
+			const auto& bird_state = game_state.bird_states[i];
+
+			const auto bird_index = game_state.active_bird_indices[i];
+			const auto bird_inputs = inputs.begin() + bird_index * interface_config.input_count;
+
+			bird_inputs[dist_gap_y_index] = next_gap_y - bird_state.position_y;
+
+			bird_inputs[dist_pipe_x_index] = game_state.pipe_position_x;
+
+			bird_inputs[dist_to_ceiling_y] = game_config.ceiling_y -
+				(bird_state.position_y + game_config.bird_radius);
+
+			bird_inputs[dist_to_floor_y] = (bird_state.position_y - game_config.bird_radius) - game_config.floor_y;
+
+			bird_inputs[bias_index] = 1.0f;
+		}
+
 		for (const auto& inference_segment : inference_network_range.balanced_segments(thread_count)) {
 			threads.emplace_back([&, inference_segment]() {
-				const auto segment_active_bird_indices = inference_segment.span<const std::uint32_t>(game_state.active_bird_indices
-				);
-
-				auto input_it = inputs.begin() + interface_config.input_count * inference_segment.begin();
-				for (std::size_t i{}; i != segment_active_bird_indices.size(); ++i) {
-					const auto& bird_state = game_state.bird_states[segment_active_bird_indices[i]];
-
-					input_it[dist_gap_y_index] = next_gap_y - bird_state.position_y;
-
-					input_it[dist_pipe_x_index] = game_state.pipe_position_x;
-
-					input_it[dist_to_ceiling_y] = game_config.ceiling_y -
-						(bird_state.position_y + game_config.bird_radius);
-
-					input_it[dist_to_floor_y] = (bird_state.position_y - game_config.bird_radius) - game_config.floor_y;
-
-					input_it[bias_index] = 1.0f;
-
-					input_it += interface_config.input_count;
-				}
-
 				neat::inference::evaluate_network_range(inference_networks, inputs, outputs, inference_segment);
-
-				for (const auto& player_index : inference_segment.indices()) {
-					if (outputs[player_index] > 0.5f) {
-						game_engine.flap(player_index);
-					}
-				}
 			});
 		}
 		for (auto& thread : threads) {
 			thread.join();
 		}
 		threads.clear();
+
+		for (std::size_t i{}; i != game_state.active_bird_indices.size(); ++i) {
+			if (outputs[game_state.active_bird_indices[i]] > 0.5f) {
+				game_engine.flap(i);
+			}
+		}
 	};
 
+	auto generation_index = std::size_t{};
 	while (not stop_training.test(std::memory_order_acquire)) {
+		std::cout << "|--------[ generation " << generation_index << " ]--------|" << std::endl;
+
 		flappy_trainer.evolve(fitness, inference_networks);
+
+		std::cout << "Evaluating performance..." << std::endl;
 
 		std::fill(fitness.begin(), fitness.end(), 0.0f);
 
@@ -135,10 +138,10 @@ int main() {
 
 		const auto [min_fitness_it, max_fitness_it] = std::minmax_element(fitness.begin(), fitness.end());
 		std::cout << "Average scores min: " << *min_fitness_it << " max: " << *max_fitness_it << std::endl;
+		++generation_index;
 	}
 
-	//keyboard_listener_thread.join();
-
+	// keyboard_listener_thread.join();
 
 	//----------------------[ Window/GLEW Setup ]----------------------//
 

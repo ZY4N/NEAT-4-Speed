@@ -5,7 +5,6 @@
 #include <cinttypes>
 #include <span>
 #include "util/debug_span.hpp" // TODO remove
-#include <vector>
 #include "util/debug_vector.hpp" // TODO remove
 #include <atomic>
 

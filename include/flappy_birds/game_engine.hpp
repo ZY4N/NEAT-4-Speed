@@ -48,7 +48,7 @@ private:
 	game_logic::physics_engine_t m_physics_engine;
 	Renderer m_renderer;
 
-	std::vector<bool> m_will_flap;
+	debug_vector<bool> m_will_flap;
 };
 
 } // namespace flappy_birds

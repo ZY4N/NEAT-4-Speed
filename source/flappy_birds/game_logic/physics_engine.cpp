@@ -6,7 +6,7 @@
 
 namespace flappy_birds::game_logic {
 
-bool physics_engine_t::update(const config_t& config, state_t& state, std::vector<bool>& flap, float dt) {
+bool physics_engine_t::update(const config_t& config, state_t& state, debug_vector<bool>& flap, float dt) {
 
 	const auto bird_radius_sq = std::pow(config.bird_radius, 2);
 

@@ -87,6 +87,7 @@ void species_sorter::assign_species_and_sorted_networks(
 
 		network_index = species.networks.end();
 	}
+	std::cout << "Networks sorted into species.\n";
 }
 
 types::species_index_t species_sorter::search_matching_network(

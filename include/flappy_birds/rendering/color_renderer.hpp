@@ -10,7 +10,7 @@
 #include <SFML/Graphics/RectangleShape.hpp>
 #include <SFML/Graphics/RenderWindow.hpp>
 #include <SFML/Graphics/Text.hpp>
-#include <vector>
+#include "util/debug_vector.hpp" // TODO remove
 
 namespace flappy_birds::rendering {
 

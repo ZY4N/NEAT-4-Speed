@@ -11,7 +11,6 @@
 #include <span>
 #include "util/debug_span.hpp" // TODO remove
 #include <system_error>
-#include <vector>
 #include "util/debug_vector.hpp" // TODO remove
 
 namespace neat {
@@ -27,7 +26,6 @@ public:
 		std::uint32_t thread_count
 	);
 
-	void init();
 
 	void evolve(debug_span<const types::fitness_t> ancestor_fitness, inference::types::network_group_t& network_group);
 
@@ -35,14 +33,6 @@ protected:
 	void create_initial_population();
 
 	void swap_population();
-
-	void update_inference_networks(
-		const types::population_t& generation,
-		inference::types::network_group_t& network_group,
-		const types::network_range_t& network_range,
-		types::network_range_t& node_range,
-		types::conn_range_t& conn_range
-	);
 
 	void evolve_into(
 		const types::population_t& ancestors,
@@ -146,7 +136,7 @@ private:
 		const types::population_t& generation,
 		inference::types::network_group_t& network_group,
 		const types::network_range_t& network_range,
-		types::network_range_t& node_range,
+		types::conn_range_t& node_range,
 		types::conn_range_t& conn_range
 	);
 
